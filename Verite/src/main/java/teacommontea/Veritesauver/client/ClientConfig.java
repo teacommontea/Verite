@@ -20,6 +20,11 @@ public final class ClientConfig {
         return teacommontea.veritesauver.util.SauverConfig.clientInt("client.detect.probe.delay.ticks", 60);
     }
 
+    public static boolean inspectEveryJoin() {
+        return "always".equalsIgnoreCase(teacommontea.veritesauver.util.SauverConfig
+                .clientString("moderation.client.inspection", "once").trim());
+    }
+
     public static boolean notifyVanilla() {
         return bool("client.detect.notify.vanilla", false);
     }

@@ -437,9 +437,11 @@ public final class LookupCommands extends CommandBase {
             return;
         }
 
-        send(sender, teacommontea.util.Lang.of("lookup.whois.resolving", "query", query));
+        boolean bedrock = teacommontea.veritesauver.mojang.BedrockAccounts.isBedrock(query);
+        String service = bedrock ? "lookup.bedrock." : "lookup.whois.mojang.";
+        send(sender, teacommontea.util.Lang.of(bedrock ? "lookup.bedrock.resolving" : "lookup.whois.resolving", "query", query));
         teacommontea.util.sched.Sched.executeAsync(() -> {
-            SauverMojang.Profile prof = SauverMojang.lookup(query);
+            SauverMojang.Profile prof = SauverMojang.lookupAny(query);
             Runnable render = () -> {
                 switch (prof.status()) {
                     case FOUND -> {
@@ -448,12 +450,13 @@ public final class LookupCommands extends CommandBase {
                         } else {
                             send(sender, teacommontea.util.Lang.of("lookup.whois.never.joined", "name", prof.name()));
                             raw(sender, teacommontea.util.Lang.of("lookup.whois.uuid", "uuid", prof.uuid()));
-                            raw(sender, teacommontea.util.Lang.of("lookup.whois.source.mojang"));
+                            raw(sender, teacommontea.util.Lang.of(prof.uuid().getMostSignificantBits() == 0L
+                                    ? "lookup.whois.source.bedrock" : "lookup.whois.source.mojang"));
                         }
                     }
                     case NOT_FOUND -> err(sender, teacommontea.util.Lang.of("lookup.whois.no.account", "query", query));
-                    case UNKNOWN -> err(sender, teacommontea.util.Lang.of("lookup.whois.mojang.unreachable", "query", query));
-                    case RATE_LIMITED -> err(sender, teacommontea.util.Lang.of("lookup.whois.mojang.ratelimited", "query", query));
+                    case UNKNOWN -> err(sender, teacommontea.util.Lang.of(service + "unreachable", "query", query));
+                    case RATE_LIMITED -> err(sender, teacommontea.util.Lang.of(service + "ratelimited", "query", query));
                 }
             };
             if (sender instanceof org.bukkit.entity.Player p) {

@@ -33,11 +33,6 @@ public final class PunishCommands extends CommandBase {
             return;
         }
         boolean all = isAllTarget(parsed.targetName());
-        UUID target = all ? null : resolve(parsed.targetName());
-        if (!all && target == null) {
-            unknownPlayer(sender, parsed.targetName());
-            return;
-        }
 
         List<String> rest = new ArrayList<>(parsed.rest());
 
@@ -62,8 +57,7 @@ public final class PunishCommands extends CommandBase {
                 ? teacommontea.util.Lang.of("punish.reason." + word)
                 : String.join(" ", rest);
 
-        long now = System.currentTimeMillis();
-        long cd = SauverLimits.cooldownRemaining(sender, type, now);
+        long cd = SauverLimits.cooldownRemaining(sender, type, System.currentTimeMillis());
         if (cd > 0) {
             err(sender, teacommontea.util.Lang.of("punish.cooldown." + word, "duration", SauverFormat.fancyTime(cd)));
             return;
@@ -76,6 +70,7 @@ public final class PunishCommands extends CommandBase {
         duration = cap.durationMillis();
 
         if (all) {
+            long now = System.currentTimeMillis();
             int done = 0;
             for (UUID u : expandTargets(parsed.targetName())) {
                 if (SauverExempt.blockReason(sender, u, type) != null) {
@@ -99,6 +94,13 @@ public final class PunishCommands extends CommandBase {
             return;
         }
 
+        long granted = duration;
+        resolveThen(sender, parsed.targetName(), (target, name) ->
+                issueOne(sender, type, word, target, name, reason, granted, parsed.silent()));
+    }
+
+    private void issueOne(CommandSender sender, Entry.Type type, String word, UUID target, String name,
+                          String reason, long duration, boolean silent) {
         boolean overwriting = (type == Entry.Type.BAN ? sauver.activeBan(target) : sauver.activeMute(target)) != null;
         String exempt = SauverExempt.blockReason(sender, target, type);
         if (exempt != null) {
@@ -107,16 +109,16 @@ public final class PunishCommands extends CommandBase {
         }
 
         SauverEngine.Result r = SauverEngine.issue(
-                type, target, null, bestName(target, parsed.targetName()), reason,
-                executorUuid(sender), executorName(sender), duration, parsed.silent(), false);
+                type, target, null, name, reason,
+                executorUuid(sender), executorName(sender), duration, silent, false);
         if (!r.ok()) {
             err(sender, Colours.WARNING + r.error());
             return;
         }
-        SauverLimits.markUsed(sender, type, now);
+        SauverLimits.markUsed(sender, type, System.currentTimeMillis());
         send(sender, teacommontea.util.Lang.of((overwriting ? "punish.updated." : "punish.issued.") + word
                 + (r.entry().permanent() ? ".permanent" : ".temporary"),
-                "name", bestName(target, parsed.targetName()),
+                "name", name,
                 "duration", SauverFormat.fancyTime(r.entry().duration()),
                 "reason", reason, "id", r.entry().randomId()));
     }

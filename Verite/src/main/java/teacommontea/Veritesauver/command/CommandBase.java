@@ -1,6 +1,5 @@
 package teacommontea.veritesauver.command;
 
-import teacommontea.util.Colours;
 import teacommontea.util.Complete;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -11,10 +10,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 
 import teacommontea.veritesauver.Sauver;
 import teacommontea.veritesauver.core.SauverDAO;
 import teacommontea.veritesauver.core.SauverEngine;
+import teacommontea.veritesauver.mojang.BedrockAccounts;
+import teacommontea.veritesauver.mojang.BedrockAccounts;
+import teacommontea.veritesauver.mojang.SauverMojang;
+import teacommontea.util.sched.Sched;
 import teacommontea.veritesauver.util.SauverMessages;
 
 public abstract class CommandBase {
@@ -113,7 +117,7 @@ public abstract class CommandBase {
     }
 
     protected String bestName(UUID u, String fallback) {
-        String n = dao().nameOf(u);
+        String n = dao().displayName(u);
         if (n != null) {
             return n;
         }
@@ -123,6 +127,55 @@ public abstract class CommandBase {
 
     protected void unknownPlayer(CommandSender sender, String name) {
         err(sender, teacommontea.util.Lang.of("moderation.player.unknown", "name", name));
+    }
+
+    protected void resolveThen(CommandSender sender, String name, BiConsumer<UUID, String> then) {
+        UUID local = resolve(name);
+        if (local != null) {
+            then.accept(local, bestName(local, name));
+            return;
+        }
+        boolean bedrock = BedrockAccounts.isBedrock(name);
+        if (!bedrock && !SauverMojang.valid(name)) {
+            unknownPlayer(sender, name);
+            return;
+        }
+        if (!bedrock && !SauverMojang.mojangUuids() && !BedrockAccounts.unprefixed()) {
+            UUID offline = SauverMojang.offlineUuid(name);
+            dao().rememberName(offline, name);
+            then.accept(offline, name);
+            return;
+        }
+        boolean viaXbox = bedrock || !SauverMojang.mojangUuids();
+        String service = viaXbox ? "lookup.bedrock." : "lookup.whois.mojang.";
+        send(sender, teacommontea.util.Lang.of(viaXbox ? "lookup.bedrock.resolving" : "lookup.whois.resolving", "query", name));
+        Sched.executeAsync(() -> {
+            SauverMojang.Profile prof = viaXbox ? BedrockAccounts.lookup(name) : SauverMojang.lookupAny(name);
+            Runnable back = () -> {
+                switch (prof.status()) {
+                    case FOUND -> {
+                        dao().rememberName(prof.uuid(), prof.name());
+                        then.accept(prof.uuid(), prof.name());
+                    }
+                    case NOT_FOUND -> {
+                        if (!bedrock && !SauverMojang.mojangUuids()) {
+                            UUID offline = SauverMojang.offlineUuid(name);
+                            dao().rememberName(offline, name);
+                            then.accept(offline, name);
+                        } else {
+                            err(sender, teacommontea.util.Lang.of("lookup.whois.no.account", "query", name));
+                        }
+                    }
+                    case UNKNOWN -> err(sender, teacommontea.util.Lang.of(service + "unreachable", "query", name));
+                    case RATE_LIMITED -> err(sender, teacommontea.util.Lang.of(service + "ratelimited", "query", name));
+                }
+            };
+            if (sender instanceof Player p) {
+                Sched.executeFor(p, back);
+            } else {
+                Sched.executeGlobal(back);
+            }
+        });
     }
 
     protected UUID lookupTarget(CommandSender sender, String[] args, String cmd) {

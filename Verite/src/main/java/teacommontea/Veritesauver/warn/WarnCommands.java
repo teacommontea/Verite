@@ -1,7 +1,6 @@
 package teacommontea.veritesauver.warn;
 
 import teacommontea.util.Colours;
-import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -50,24 +49,23 @@ public final class WarnCommands extends CommandBase {
             return;
         }
 
-        UUID target = resolve(parsed.targetName());
-        if (target == null) {
-            unknownPlayer(sender, parsed.targetName());
-            return;
-        }
+        resolveThen(sender, parsed.targetName(), (target, name) -> warnOne(sender, target, name, reason, parsed.silent()));
+    }
+
+    private void warnOne(CommandSender sender, UUID target, String name, String reason, boolean silent) {
         String exempt = teacommontea.veritesauver.punish.SauverExempt.blockReason(sender, target, Entry.Type.WARNING);
         if (exempt != null) {
             err(sender, Colours.WARNING + exempt);
             return;
         }
-        SauverEngine.Result r = SauverEngine.warn(target, bestName(target, parsed.targetName()), reason,
-                executorUuid(sender), executorName(sender), parsed.silent());
+        SauverEngine.Result r = SauverEngine.warn(target, name, reason,
+                executorUuid(sender), executorName(sender), silent);
         if (!r.ok()) {
             err(sender, Colours.WARNING + r.error());
             return;
         }
         int active = dao().activeWarnings(target, System.currentTimeMillis()).size();
-        send(sender, teacommontea.util.Lang.of("warn.issued", "name", bestName(target, parsed.targetName()),
+        send(sender, teacommontea.util.Lang.of("warn.issued", "name", name,
                 "active", active, "id", r.entry().randomId()));
     }
 

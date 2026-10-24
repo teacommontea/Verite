@@ -382,6 +382,11 @@ public final class SauverDAO {
         if (!anomalies.isEmpty()) {
             p.set("clientanomalies", String.join(",", anomalies));
         }
+        p.set("clientinspected", now);
+    }
+
+    public boolean clientInspected(UUID u) {
+        return player(u).getLong("clientinspected", 0L) > 0L;
     }
 
     public String clientIdentity(UUID u) {
@@ -501,6 +506,37 @@ public final class SauverDAO {
             long playtimeMs,
             boolean online,
             long punishments) {}
+
+    public void rememberName(UUID u, String name) {
+        if (u == null || name == null || name.isBlank()) {
+            return;
+        }
+        String key = name.toLowerCase(java.util.Locale.ROOT);
+        if (nameIndex().getString(key, null) == null) {
+            nameIndex().set(key, u.toString());
+        }
+        player(u).set("resolvedname", name);
+    }
+
+    public String displayName(UUID u) {
+        Scope p = player(u);
+        String joined = p.getString("name", null);
+        if (joined != null) {
+            return joined;
+        }
+        String resolved = p.getString("resolvedname", null);
+        if (resolved != null) {
+            return resolved;
+        }
+        String id = u.toString();
+        for (Scope.Entry e : nameIndex().entries()) {
+            if (id.equals(String.valueOf(e.value()))) {
+                p.set("resolvedname", e.key());
+                return e.key();
+            }
+        }
+        return null;
+    }
 
     public UUID uuidByName(String name) {
         if (name == null) {

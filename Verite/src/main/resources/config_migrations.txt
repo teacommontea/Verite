@@ -1,6 +1,9 @@
 # RENAME, MOVE, DELETE, MIGRATE, DROP, DROP PARENT and DROP H2 COLUMN
 # The manifest is applied bottom to top: the last line runs first, the first line runs last.
 
+# 17th October 2026
+DROP PARENT maison FROM config.yml
+
 # 20th September 2026
 DELETE filter/.tokenizers/es_dialect.vlex9
 DELETE filter/.tokenizers/fr_dialect.vlex9

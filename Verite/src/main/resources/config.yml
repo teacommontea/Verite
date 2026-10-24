@@ -220,6 +220,8 @@ moderation:
   # Limit for the number of accounts to show in a duplicate IP-scan.
   shared.ip.scan.limit: 20
 
+  client.inspection: once
+
   # Supports \n (Newline), @duration, @enforcer, @target, @reason, @punishment and @total.warns quantifiers
   # If a reason was not set, @reason will be replaced with "No reason provided."
   punish.message.templates:
@@ -310,15 +312,6 @@ fake.connect:
   # Supports &-codes and &#RRGGBB hex.
   join.message: "&#FFFF55%player% joined the game"
   leave.message: "&#FFFF55%player% left the game"
-
-maison:
-  enabled: true
-  teleport: true
-  tp2p: true
-  tphere: true
-  tpa: true
-  tpahere: true
-  request.expiry: 2m
 
 # By changing the value below to en, es, it, fr, pt or de, you change the
 # language in which the plugin operates. You can switch back at any time.

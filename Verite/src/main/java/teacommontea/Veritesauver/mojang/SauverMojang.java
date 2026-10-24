@@ -36,6 +36,20 @@ public final class SauverMojang {
 
     private SauverMojang() {}
 
+    public static Profile lookupAny(String name) {
+        if (BedrockAccounts.isBedrock(name)) {
+            return BedrockAccounts.lookup(name);
+        }
+        Profile java = lookup(name);
+        if (java.status() == Status.NOT_FOUND && BedrockAccounts.unprefixed()) {
+            Profile bedrock = BedrockAccounts.lookup(name);
+            if (bedrock.status() == Status.FOUND) {
+                return bedrock;
+            }
+        }
+        return java;
+    }
+
     public static Profile lookup(String name) {
         if (name == null || name.isBlank()) {
             return Profile.NOT_FOUND;
@@ -77,7 +91,33 @@ public final class SauverMojang {
         CACHE.put(key, value);
     }
 
-    static boolean valid(String name) {
+    private static volatile Boolean mojangUuids;
+
+    public static boolean mojangUuids() {
+        Boolean cached = mojangUuids;
+        if (cached == null) {
+            cached = org.bukkit.Bukkit.getOnlineMode() || proxyForwarding();
+            mojangUuids = cached;
+        }
+        return cached;
+    }
+
+    private static boolean proxyForwarding() {
+        java.io.File spigot = new java.io.File("spigot.yml");
+        if (spigot.isFile() && org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(spigot)
+                .getBoolean("settings.bungeecord", false)) {
+            return true;
+        }
+        java.io.File paper = new java.io.File("config", "paper-global.yml");
+        return paper.isFile() && org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(paper)
+                .getBoolean("proxies.velocity.enabled", false);
+    }
+
+    public static UUID offlineUuid(String name) {
+        return UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    public static boolean valid(String name) {
         if (name.length() < 3 || name.length() > 16) {
             return false;
         }

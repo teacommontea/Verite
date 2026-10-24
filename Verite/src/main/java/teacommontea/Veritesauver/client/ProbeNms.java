@@ -38,6 +38,8 @@ final class ProbeNms {
     private final Constructor<?> openSignCtor;
     private final Constructor<?> signEntityCtor;
     private final Constructor<?> signTextCtor;
+    private final boolean signTextTakesList;
+    private final Object frontSide;
     private final Class<?> componentClass;
     private final MethodHandle fromJson;
     private final MethodHandle setText;
@@ -63,6 +65,8 @@ final class ProbeNms {
         this.openSignCtor = b.openSignCtor;
         this.signEntityCtor = b.signEntityCtor;
         this.signTextCtor = b.signTextCtor;
+        this.signTextTakesList = b.signTextTakesList;
+        this.frontSide = b.frontSide;
         this.componentClass = b.componentClass;
         this.fromJson = b.fromJson;
         this.setText = b.setText;
@@ -89,6 +93,8 @@ final class ProbeNms {
         Constructor<?> openSignCtor;
         Constructor<?> signEntityCtor;
         Constructor<?> signTextCtor;
+        boolean signTextTakesList;
+        Object frontSide;
         Class<?> componentClass;
         MethodHandle fromJson;
         MethodHandle setText;
@@ -131,15 +137,18 @@ final class ProbeNms {
             b.signUpdateClass = requireClass(
                     "net.minecraft.network.protocol.game.ServerboundSignUpdatePacket",
                     "net.minecraft.network.protocol.game.PacketPlayInUpdateSign");
-            b.signLinesField = require(NmsFields.firstFieldOfAnyType(b.signUpdateClass, "[Ljava.lang.String;"),
-                    "String[] field on " + b.signUpdateClass.getName());
+            Field lines = NmsFields.firstFieldOfAnyType(b.signUpdateClass, "[Ljava.lang.String;");
+            b.signLinesField = require(lines != null ? lines : NmsFields.firstFieldAssignableTo(b.signUpdateClass, List.class),
+                    "sign lines field on " + b.signUpdateClass.getName());
             b.signPosField = require(NmsFields.firstFieldAssignableTo(b.signUpdateClass, blockPos),
                     "BlockPos field on " + b.signUpdateClass.getName());
 
             Class<?> openSign = requireClass(
                     "net.minecraft.network.protocol.game.ClientboundOpenSignEditorPacket",
                     "net.minecraft.network.protocol.game.PacketPlayOutOpenSignEditor");
-            b.openSignCtor = openSign.getConstructor(blockPos, boolean.class);
+            Class<?> sideType = signSideType();
+            b.frontSide = sideType == boolean.class ? Boolean.TRUE : frontSlot(sideType);
+            b.openSignCtor = openSign.getConstructor(blockPos, sideType);
 
             b.componentClass = requireClass("net.minecraft.network.chat.Component",
                     "net.minecraft.network.chat.IChatBaseComponent");
@@ -156,9 +165,13 @@ final class ProbeNms {
             Class<?> dyeColour = requireClass("net.minecraft.world.item.DyeColor",
                     "net.minecraft.world.item.EnumColor");
             Class<?> components = Array.newInstance(b.componentClass, 0).getClass();
-            b.signTextCtor = signText.getConstructor(components, components, dyeColour, boolean.class);
+            Constructor<?> arrayText = constructorOrNull(signText, components, components, dyeColour, boolean.class);
+            b.signTextTakesList = arrayText == null;
+            b.signTextCtor = arrayText != null ? arrayText
+                    : signText.getConstructor(List.class, List.class, dyeColour, boolean.class);
             b.blackDye = firstEnum(dyeColour);
-            b.setText = LOOKUP.unreflect(methodTaking(signEntity, boolean.class, signText, boolean.class));
+            b.setText = LOOKUP.unreflect(methodTaking(signEntity, sideType == boolean.class ? boolean.class : void.class,
+                    signText, sideType));
             b.updatePacket = LOOKUP.unreflect(zeroArgReturning(signEntity,
                     requireClass("net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket",
                             "net.minecraft.network.protocol.game.PacketPlayOutTileEntityData")));
@@ -185,6 +198,31 @@ final class ProbeNms {
             throw u;
         } catch (Throwable t) {
             throw new Unsupported("client probe resolution failed: " + t);
+        }
+    }
+
+    private static Class<?> signSideType() {
+        try {
+            return Class.forName("net.minecraft.world.level.block.entity.SignTextSlot");
+        } catch (ClassNotFoundException e) {
+            return boolean.class;
+        }
+    }
+
+    private static Object frontSlot(Class<?> slot) throws Unsupported {
+        for (Object constant : slot.getEnumConstants()) {
+            if (((Enum<?>) constant).name().equals("FRONT")) {
+                return constant;
+            }
+        }
+        throw new Unsupported("no FRONT constant on " + slot.getName());
+    }
+
+    private static Constructor<?> constructorOrNull(Class<?> owner, Class<?>... params) {
+        try {
+            return owner.getConstructor(params);
+        } catch (NoSuchMethodException e) {
+            return null;
         }
     }
 
@@ -297,12 +335,15 @@ final class ProbeNms {
             String json = i < lines.size() ? lines.get(i) : "{\"text\":\"\"}";
             Array.set(messages, i, fromJson.invoke(json));
         }
-        Object text = signTextCtor.newInstance(messages, messages, blackDye, false);
+        Object text = signTextTakesList
+                ? signTextCtor.newInstance(java.util.Arrays.asList((Object[]) messages),
+                        java.util.Arrays.asList((Object[]) messages), blackDye, false)
+                : signTextCtor.newInstance(messages, messages, blackDye, false);
         Object entity = signEntityCtor.newInstance(pos, signBlockState);
         setLevel.invoke(entity, worldHandle.invoke(p.getWorld()));
-        setText.invoke(entity, text, true);
+        setText.invoke(entity, text, frontSide);
         sendPacket.invoke(listener, updatePacket.invoke(entity));
-        sendPacket.invoke(listener, openSignCtor.newInstance(pos, true));
+        sendPacket.invoke(listener, openSignCtor.newInstance(pos, frontSide));
         sendPacket.invoke(listener, closeContainerCtor.newInstance(0));
     }
 
@@ -318,7 +359,18 @@ final class ProbeNms {
     String[] linesOf(Object packet) {
         try {
             Object v = signLinesField.get(packet);
-            return v instanceof String[] arr ? arr : null;
+            if (v instanceof String[] arr) {
+                return arr;
+            }
+            if (v instanceof List<?> list) {
+                String[] out = new String[list.size()];
+                for (int i = 0; i < out.length; i++) {
+                    Object line = list.get(i);
+                    out[i] = line == null ? null : line.toString();
+                }
+                return out;
+            }
+            return null;
         } catch (Throwable t) {
             return null;
         }

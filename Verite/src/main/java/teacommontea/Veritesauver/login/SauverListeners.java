@@ -176,6 +176,9 @@ public final class SauverListeners implements Listener {
         if (detect == null) {
             return;
         }
+        if (!teacommontea.veritesauver.client.ClientConfig.inspectEveryJoin() && dao().clientInspected(p.getUniqueId())) {
+            return;
+        }
         detect.inspect(p, profile -> {
             describe(p, profile);
             dao().recordClientProfile(p.getUniqueId(), profile, System.currentTimeMillis());

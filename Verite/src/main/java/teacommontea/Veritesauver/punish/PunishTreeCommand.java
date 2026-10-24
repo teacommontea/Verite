@@ -1,11 +1,9 @@
 package teacommontea.veritesauver.punish;
 
-import teacommontea.util.Colours;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.util.List;
-import java.util.UUID;
 
 import teacommontea.veritesauver.Sauver;
 import teacommontea.veritesauver.command.CommandBase;
@@ -29,16 +27,13 @@ public final class PunishTreeCommand extends CommandBase {
             sauver.tree().open(staff, null, null);
             return;
         }
-        UUID target = resolve(args[0]);
-        if (target == null) {
-            unknownPlayer(sender, args[0]);
-            return;
-        }
-        if (target.equals(staff.getUniqueId())) {
-            err(sender, teacommontea.util.Lang.of("punishtree.self"));
-            return;
-        }
-        sauver.tree().open(staff, target, bestName(target, args[0]));
+        resolveThen(sender, args[0], (target, name) -> {
+            if (target.equals(staff.getUniqueId())) {
+                err(sender, teacommontea.util.Lang.of("punishtree.self"));
+                return;
+            }
+            sauver.tree().open(staff, target, name);
+        });
     }
 
     public List<String> tab(CommandSender sender, String[] args) {
