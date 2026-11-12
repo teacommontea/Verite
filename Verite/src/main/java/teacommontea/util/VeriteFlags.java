@@ -62,7 +62,6 @@ public final class VeriteFlags {
         String adv = "chat.filter.advanced.";
 
         reg("keep.chat.readable", CFG, adv + "keep.chat.readable", Type.BOOLEAN, BOOL);
-        reg("block.possible.spam", CFG, adv + "block.possible.spam", Type.BOOLEAN, BOOL);
         reg("block.unsupported.languages", CFG, adv + "block.unsupported.languages", Type.BOOLEAN, BOOL);
 
         reg("evasion.homoglyph", CFG, adv + "evasion.homoglyph", Type.BOOLEAN, BOOL);

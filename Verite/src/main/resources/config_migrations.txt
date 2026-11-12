@@ -1,6 +1,9 @@
 # RENAME, MOVE, DELETE, MIGRATE, DROP, DROP PARENT and DROP H2 COLUMN
 # The manifest is applied bottom to top: the last line runs first, the first line runs last.
 
+# 12th November 2026
+DROP chat.filter.advanced.block.possible.spam FROM config.yml
+
 # 17th October 2026
 DROP PARENT maison FROM config.yml
 

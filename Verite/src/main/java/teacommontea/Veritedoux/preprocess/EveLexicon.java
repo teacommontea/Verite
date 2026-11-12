@@ -9,20 +9,12 @@ import teacommontea.veritedoux.util.EveVlex9;
 
 public final class EveLexicon {
 
-    static final String[] REGISTERS = {"MT", "LY", "SP", "ID", "NA", "HI", "IN", "OP", "IP"};
-    private static final int R = REGISTERS.length;
-
     private static EveVlex9 reader;
     private static String[] langs = new String[0];
 
     private static final int CACHE_CAP = 1 << 16;
     private static final Object ABSENT = new Object();
     private static final Map<String, Object> POS_CACHE = new java.util.LinkedHashMap<>(CACHE_CAP, 0.75f, true) {
-        @Override protected boolean removeEldestEntry(Map.Entry<String, Object> e) {
-            return size() > CACHE_CAP;
-        }
-    };
-    private static final Map<String, Object> REG_CACHE = new java.util.LinkedHashMap<>(CACHE_CAP, 0.75f, true) {
         @Override protected boolean removeEldestEntry(Map.Entry<String, Object> e) {
             return size() > CACHE_CAP;
         }
@@ -92,46 +84,6 @@ public final class EveLexicon {
         }
     }
 
-    public static float[] registers(String word) {
-        Object cached;
-        synchronized (REG_CACHE) {
-            cached = REG_CACHE.get(word);
-        }
-        if (cached == ABSENT) return null;
-        if (cached != null) return ((float[]) cached).clone();
-        float[] out = decodeRegisters(word);
-        synchronized (REG_CACHE) {
-            REG_CACHE.put(word, out == null ? ABSENT : out);
-        }
-        return out == null ? null : out.clone();
-    }
-
-    private static float[] decodeRegisters(String word) {
-        EveVlex9 r = reader;
-        if (r == null) return null;
-        try {
-            EveVlex9.LookupResult res = r.lookup(word.getBytes(StandardCharsets.UTF_8));
-            if (res == null) return null;
-            EveVlex9.Row best = null;
-            long bestSum = -1;
-            for (EveVlex9.Row row : res.rows) {
-                long s = 0;
-                for (int x : row.registers()) s += x;
-                if (s > bestSum) {
-                    bestSum = s;
-                    best = row;
-                }
-            }
-            if (best == null) return null;
-            int[] reg = best.registers();
-            float[] out = new float[R];
-            for (int i = 0; i < R; i++) out[i] = reg[i] / 1000.0f;
-            return out;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
     public static boolean knownIn(String lang, String word) {
         Map<String, Double> pos = position(word);
         return pos != null && pos.containsKey(lang);
@@ -162,9 +114,6 @@ public final class EveLexicon {
         TOTALS = new long[0];
         synchronized (POS_CACHE) {
             POS_CACHE.clear();
-        }
-        synchronized (REG_CACHE) {
-            REG_CACHE.clear();
         }
         try {
             EveVlex9.configureNativeDir(new java.io.File(plugin.getDataFolder(), "filter/.native"));

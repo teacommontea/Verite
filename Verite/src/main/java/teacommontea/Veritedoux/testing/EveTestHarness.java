@@ -13,7 +13,6 @@ import teacommontea.veritedoux.EveCommands;
 import teacommontea.veritedoux.util.EveDebug;
 import teacommontea.veritedoux.preprocess.EveSegment;
 import teacommontea.veritedoux.preprocess.EveDialect;
-import teacommontea.veritedoux.preprocess.EveRegister;
 
 public final class EveTestHarness implements AutoCloseable {
 
@@ -85,8 +84,7 @@ public final class EveTestHarness implements AutoCloseable {
         String lang = EveSegment.ready() ? EveSegment.owner(message) : "";
         String dialect = EveDialect.ready(lang) ? EveDialect.dominant(lang, message) : null;
         EveEntry.Result verdict = EveEntry.check(message);
-        double adLean = EveRegister.ready() ? EveRegister.adLean(message) : Double.NaN;
-        return new Inspection(message, lang, dialect, verdict, adLean);
+        return new Inspection(message, lang, dialect, verdict);
     }
 
     public teacommontea.veritedoux.process.EveRoute.Explain explain(String message) {
@@ -189,5 +187,5 @@ public final class EveTestHarness implements AutoCloseable {
     };
 
     public record Inspection(String message, String language, String dialect,
-                      EveEntry.Result verdict, double adLean) {}
+                      EveEntry.Result verdict) {}
 }

@@ -25,7 +25,6 @@ public final class EveSettings {
             segmentation = true, fingerprint = true;
     public boolean componentEnabled = true;
     public boolean keepChatReadable = false;
-    public boolean blockSpam = false;
 
     public boolean blockRepeat = false;
     public boolean blockRepeatExact = true;
@@ -71,7 +70,6 @@ public final class EveSettings {
             st.blockMessage = color(y.getString("chat.filter.block.message", st.blockMessage));
             st.repeatMessage = color(y.getString("chat.filter.repeat.message", st.repeatMessage));
             st.keepChatReadable = y.getBoolean("chat.filter.advanced.keep.chat.readable", false);
-            st.blockSpam = y.getBoolean("chat.filter.advanced.block.possible.spam", false);
             st.blockRepeat = y.getBoolean("chat.filter.advanced.block.repeat.messages", false);
             st.blockRepeatExact = y.getBoolean("chat.filter.advanced.block.repeat.exact", true);
             st.blockRepeatNear = y.getBoolean("chat.filter.advanced.block.repeat.near", true);

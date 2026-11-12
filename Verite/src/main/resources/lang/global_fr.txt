@@ -656,7 +656,6 @@ language.french = français
 language.italian = italien
 language.portuguese = portugais
 language.german = allemand
-filter.detection.loaded = Détection du type de message chargée.
 filter.segmentation.unavailable = Segmentation désactivée. Le tokenizer est indisponible.
 filter.segmentation.loaded.one = %count% langue chargée.
 filter.segmentation.loaded = %count% langues chargées.

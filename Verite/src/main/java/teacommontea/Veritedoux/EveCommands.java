@@ -3,7 +3,6 @@ package teacommontea.veritedoux;
 import org.bukkit.plugin.Plugin;
 import teacommontea.veritedoux.preprocess.EveLexicon;
 import teacommontea.veritedoux.preprocess.EveSegment;
-import teacommontea.veritedoux.preprocess.EveRegister;
 
 public final class EveCommands {
 
@@ -12,7 +11,6 @@ public final class EveCommands {
     public static void loadAll(Plugin plugin) {
         EveLexicon.load(plugin);
         EveSegment.load(plugin);
-        EveRegister.load(plugin);
         EveEntry.load(plugin);
     }
 }

@@ -4,8 +4,6 @@ import java.util.List;
 
 import teacommontea.veritedoux.util.EveText;
 import teacommontea.veritedoux.preprocess.EveLang;
-import teacommontea.veritedoux.preprocess.EveRegister;
-import teacommontea.veritedoux.EveEntry;
 import teacommontea.veritedoux.util.EveSettings;
 
 public final class EveGate {
@@ -29,11 +27,6 @@ public final class EveGate {
             return !settings.languageAllowed("undeterminable");
         }
         return present.stream().anyMatch(lang -> !settings.languageAllowed(lang));
-    }
-
-    static boolean spamBlocks(String message) {
-        if (settings == null || !settings.blockSpam) return false;
-        return EveRegister.ready() && EveRegister.looksLikeAd(message);
     }
 
     static boolean unreadableBlocks(String message) {

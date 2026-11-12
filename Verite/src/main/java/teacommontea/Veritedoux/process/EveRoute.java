@@ -62,13 +62,6 @@ public final class EveRoute {
         }
 
         s = EveDebug.start();
-        boolean spam = EveGate.spamBlocks(message);
-        EveDebug.end("spamBlocks", s);
-        if (spam) {
-            return EveEntry.Result.BLOCK;
-        }
-
-        s = EveDebug.start();
         boolean unreadable = EveGate.unreadableBlocks(message);
         EveDebug.end("unreadableBlocks", s);
         if (unreadable) {
@@ -124,9 +117,6 @@ public final class EveRoute {
         }
         if (EveGate.languageBlocks(message)) {
             return new Explain("language-gate", EveEntry.Result.BLOCK);
-        }
-        if (EveGate.spamBlocks(message)) {
-            return new Explain("spam-gate", EveEntry.Result.BLOCK);
         }
         if (EveGate.unreadableBlocks(message)) {
             return new Explain("unreadable-gate", EveEntry.Result.BLOCK);
