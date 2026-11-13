@@ -369,6 +369,10 @@ public final class VeritePlugin extends JavaPlugin
         File dir = filterDir();
         boolean present = dir.isDirectory() && new File(dir, "English").isDirectory();
 
+        if (present && !gear("chat.filter.auto.update.eve", false)) {
+            return true;
+        }
+
         String latest = channelDigest(FILTER_ASSET);
         if (latest == null) {
             if (present) {
@@ -386,8 +390,8 @@ public final class VeritePlugin extends JavaPlugin
         File tmp = new File(getDataFolder(), "filter.tmp");
         try {
             getLogger().info(present
-                    ? "A new filter release is available. Updating boards..."
-                    : "Filter boards not found. Downloading...");
+                    ? teacommontea.util.Lang.of("bundle.filter.update")
+                    : teacommontea.util.Lang.of("bundle.filter.download"));
             try {
                 downloadTo(channelUrl(FILTER_ASSET), tmp);
             } catch (Exception e) {
@@ -399,7 +403,7 @@ public final class VeritePlugin extends JavaPlugin
             }
             unzipInto(tmp, getDataFolder());
             if (!new File(dir, "English").isDirectory()) {
-                throw new java.io.IOException("filter bundle did not contain filter/English");
+                throw new java.io.IOException(teacommontea.util.Lang.of("bundle.filter.incomplete"));
             }
             if (present) {
                 teacommontea.util.SelfHeal.reconcileEve(this, SIEVE_CONFIGS);
@@ -497,8 +501,8 @@ public final class VeritePlugin extends JavaPlugin
         File tmp = new File(getDataFolder(), "native.tmp");
         try {
             getLogger().info(present
-                    ? "A new native library is available. Updating libraries..."
-                    : "Native library not found. Downloading...");
+                    ? teacommontea.util.Lang.of("bundle.native.update")
+                    : teacommontea.util.Lang.of("bundle.native.download"));
             try {
                 downloadTo(channelUrl(NATIVE_ASSET), tmp);
             } catch (Exception e) {
@@ -508,7 +512,7 @@ public final class VeritePlugin extends JavaPlugin
             dir.mkdirs();
             unzipInto(tmp, dir);
             if (!nativeDir.isDirectory()) {
-                throw new java.io.IOException("native bundle did not contain .native");
+                throw new java.io.IOException(teacommontea.util.Lang.of("bundle.native.incomplete"));
             }
             recordBundle("native", latest);
             getLogger().info(teacommontea.util.ConsoleColours.ok(teacommontea.util.Lang.of("bundle.native.installed")));
@@ -546,8 +550,8 @@ public final class VeritePlugin extends JavaPlugin
         File tmp = new File(getDataFolder(), "tokenizers.tmp");
         try {
             getLogger().info(present
-                    ? "A new tokeniser bundle is available. Updating tokenisers..."
-                    : "Tokenisers not found. Downloading...");
+                    ? teacommontea.util.Lang.of("bundle.tokenisers.update")
+                    : teacommontea.util.Lang.of("bundle.tokenisers.download"));
             try {
                 downloadTo(channelUrl(TOKENIZER_ASSET), tmp);
             } catch (Exception e) {
@@ -557,7 +561,7 @@ public final class VeritePlugin extends JavaPlugin
             filterDir().mkdirs();
             unzipInto(tmp, filterDir());
             if (!lex.isFile()) {
-                throw new java.io.IOException("bundle did not contain .tokenizers/tokenizer.vlex9");
+                throw new java.io.IOException(teacommontea.util.Lang.of("bundle.tokenisers.incomplete"));
             }
             recordBundle("tokenizers", latest);
             getLogger().info(teacommontea.util.ConsoleColours.ok(teacommontea.util.Lang.of("bundle.tokenisers.installed")));

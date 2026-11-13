@@ -85,7 +85,7 @@ public final class Lang {
 
     static Map<String, String> parse(String text) {
         Map<String, String> out = new LinkedHashMap<>();
-        for (String raw : Yaml.splitLines(text)) {
+        for (String raw : teacommontea.clisto.YamlText.splitLines(text)) {
             String line = raw.trim();
             if (line.isEmpty() || line.startsWith("#")) continue;
             int eq = line.indexOf('=');

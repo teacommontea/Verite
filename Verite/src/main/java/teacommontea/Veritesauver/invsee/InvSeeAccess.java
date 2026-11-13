@@ -30,6 +30,7 @@ public final class InvSeeAccess {
     private final Class<?> containerClass;
     private final Class<?> menuClass;
     private final Class<?> slotClass;
+    private final Class<?> slotSectionClass;
     private final Class<?> itemStackClass;
     private final Class<?> enderContainerClass;
 
@@ -67,6 +68,7 @@ public final class InvSeeAccess {
         this.containerClass = b.containerClass;
         this.menuClass = b.menuClass;
         this.slotClass = b.slotClass;
+        this.slotSectionClass = b.slotSectionClass;
         this.itemStackClass = b.itemStackClass;
         this.enderContainerClass = b.enderContainerClass;
         this.craftPlayerGetHandle = b.craftPlayerGetHandle;
@@ -99,6 +101,7 @@ public final class InvSeeAccess {
     public Class<?> containerClass() { return containerClass; }
     public Class<?> menuClass() { return menuClass; }
     public Class<?> slotClass() { return slotClass; }
+    public Class<?> slotSectionClass() { return slotSectionClass; }
     public Class<?> itemStackClass() { return itemStackClass; }
 
     public Object handleOf(Player p) throws Throwable {
@@ -528,6 +531,7 @@ public final class InvSeeAccess {
         Class<?> containerClass;
         Class<?> menuClass;
         Class<?> slotClass;
+        Class<?> slotSectionClass;
         Class<?> itemStackClass;
         Class<?> inventoryClass;
         Class<?> enderContainerClass;
@@ -558,6 +562,26 @@ public final class InvSeeAccess {
         Field playerIoField;
         MethodHandle playerDataDir;
 
+        private static Class<?> slotSection(Class<?> slot, Class<?> container) throws Unsupported {
+            boolean plain = false;
+            for (Constructor<?> c : slot.getConstructors()) {
+                Class<?>[] p = c.getParameterTypes();
+                if (p.length < 4 || p[0] != container || p[1] != int.class || p[2] != int.class || p[3] != int.class) {
+                    continue;
+                }
+                if (p.length == 5 && p[4].isEnum()) {
+                    return p[4];
+                }
+                if (p.length == 4) {
+                    plain = true;
+                }
+            }
+            if (plain) {
+                return null;
+            }
+            throw new Unsupported("no Slot(Container, int, int, int) constructor on " + slot.getName());
+        }
+
         InvSeeAccess build() throws Unsupported, Throwable {
             Class<?> craftPlayer = obc("entity.CraftPlayer");
             Method gh = craftPlayer.getMethod("getHandle");
@@ -577,6 +601,7 @@ public final class InvSeeAccess {
                     "net.minecraft.world.inventory.Slot");
             itemStackClass = require(
                     "net.minecraft.world.item.ItemStack");
+            slotSectionClass = slotSection(slotClass, containerClass);
             enderContainerClass = require(
                     "net.minecraft.world.inventory.PlayerEnderChestContainer",
                     "net.minecraft.world.inventory.InventoryEnderChest");

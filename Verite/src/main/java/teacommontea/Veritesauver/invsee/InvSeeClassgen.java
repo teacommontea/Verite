@@ -10,6 +10,9 @@ public final class InvSeeClassgen {
     private final Constructor<?> slotCtor;
     private final Constructor<?> menuCtor;
     private final Constructor<?> viewCtor;
+    private final Object containerSection;
+    private final Object inventorySection;
+    private final Object hotbarSection;
 
     private InvSeeClassgen(InvSeeAccess access, Constructor<?> containerCtor,
                           Constructor<?> slotCtor, Constructor<?> menuCtor, Constructor<?> viewCtor) {
@@ -18,6 +21,21 @@ public final class InvSeeClassgen {
         this.slotCtor = slotCtor;
         this.menuCtor = menuCtor;
         this.viewCtor = viewCtor;
+        this.containerSection = section(access.slotSectionClass(), "CONTAINER");
+        this.inventorySection = section(access.slotSectionClass(), "INVENTORY");
+        this.hotbarSection = section(access.slotSectionClass(), "HOTBAR");
+    }
+
+    private static Object section(Class<?> type, String name) {
+        if (type == null) {
+            return null;
+        }
+        for (Object constant : type.getEnumConstants()) {
+            if (((Enum<?>) constant).name().equals(name)) {
+                return constant;
+            }
+        }
+        return type.getEnumConstants()[0];
     }
 
     public InvSeeAccess access() {
@@ -30,7 +48,12 @@ public final class InvSeeClassgen {
 
     public Object newSlot(Object container, int index, int x, int y, SlotHandler handler)
             throws Throwable {
-        return slotCtor.newInstance(container, index, x, y, handler);
+        return slotCtor.newInstance(container, index, x, y, containerSection, handler);
+    }
+
+    public Object newPlayerSlot(Object inventory, int index, int x, int y, SlotHandler handler)
+            throws Throwable {
+        return slotCtor.newInstance(inventory, index, x, y, index < 9 ? hotbarSection : inventorySection, handler);
     }
 
     public Object newMenu(Object menuType, int id, MenuHandler handler) throws Throwable {
@@ -66,7 +89,7 @@ public final class InvSeeClassgen {
 
             Constructor<?> cCtor = cClass.getConstructor(ContainerHandler.class);
             Constructor<?> sCtor = sClass.getConstructor(access.containerClass(), int.class, int.class,
-                    int.class, SlotHandler.class);
+                    int.class, Object.class, SlotHandler.class);
             Class<?> menuType = InvSeeAccess.firstExisting(
                     "net.minecraft.world.inventory.MenuType",
                     "net.minecraft.world.inventory.Containers");

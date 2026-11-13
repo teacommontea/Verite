@@ -22,7 +22,9 @@ final class InvSeeSlotGen {
         Class<?> item = access.itemStackClass();
         String slotName = Type.getInternalName(slot);
         String handlerDesc = Type.getDescriptor(SlotHandler.class);
-        String ctorDesc = "(" + Type.getDescriptor(container) + "III)V";
+        Class<?> section = access.slotSectionClass();
+        String ctorDesc = "(" + Type.getDescriptor(container) + "III"
+                + (section == null ? "" : Type.getDescriptor(section)) + ")V";
 
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
         cw.visit(Opcodes.V17, Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL, internalName, null, slotName, null);
@@ -30,16 +32,20 @@ final class InvSeeSlotGen {
         cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL, "h", handlerDesc, null, null).visitEnd();
 
         MethodVisitor ct = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>",
-                "(" + Type.getDescriptor(container) + "III" + handlerDesc + ")V", null, null);
+                "(" + Type.getDescriptor(container) + "IIILjava/lang/Object;" + handlerDesc + ")V", null, null);
         ct.visitCode();
         ct.visitVarInsn(Opcodes.ALOAD, 0);
         ct.visitVarInsn(Opcodes.ALOAD, 1);
         ct.visitVarInsn(Opcodes.ILOAD, 2);
         ct.visitVarInsn(Opcodes.ILOAD, 3);
         ct.visitVarInsn(Opcodes.ILOAD, 4);
+        if (section != null) {
+            ct.visitVarInsn(Opcodes.ALOAD, 5);
+            ct.visitTypeInsn(Opcodes.CHECKCAST, Type.getInternalName(section));
+        }
         ct.visitMethodInsn(Opcodes.INVOKESPECIAL, slotName, "<init>", ctorDesc, false);
         ct.visitVarInsn(Opcodes.ALOAD, 0);
-        ct.visitVarInsn(Opcodes.ALOAD, 5);
+        ct.visitVarInsn(Opcodes.ALOAD, 6);
         ct.visitFieldInsn(Opcodes.PUTFIELD, internalName, "h", handlerDesc);
         ct.visitInsn(Opcodes.RETURN);
         ct.visitMaxs(0, 0);

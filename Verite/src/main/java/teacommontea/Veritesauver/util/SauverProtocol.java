@@ -4,7 +4,10 @@ import java.util.TreeMap;
 
 public final class SauverProtocol {
 
+    private static final int SNAPSHOT_BIT = 0x40000000;
+
     private static final TreeMap<Integer, String> TABLE = new TreeMap<>();
+    private static final TreeMap<Integer, String> SNAPSHOTS = new TreeMap<>();
 
     static {
 
@@ -33,6 +36,8 @@ public final class SauverProtocol {
         TABLE.put(775, "26.1.2");
         TABLE.put(776, "26.2");
         TABLE.put(777, "26.3");
+
+        SNAPSHOTS.put(346, "26.4 Snapshot 8");
     }
 
     private SauverProtocol() {}
@@ -40,6 +45,14 @@ public final class SauverProtocol {
     public static String versionName(int protocol) {
         if (protocol <= 0) {
             return null;
+        }
+        if ((protocol & SNAPSHOT_BIT) != 0) {
+            int number = protocol & ~SNAPSHOT_BIT;
+            var snapshot = SNAPSHOTS.floorEntry(number);
+            if (snapshot == null) {
+                return "snapshot " + number;
+            }
+            return number > snapshot.getKey() ? snapshot.getValue() + "+" : snapshot.getValue();
         }
         var floor = TABLE.floorEntry(protocol);
         if (floor == null) {

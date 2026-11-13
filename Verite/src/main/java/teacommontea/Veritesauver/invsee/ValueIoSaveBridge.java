@@ -82,7 +82,7 @@ final class ValueIoSaveBridge implements InvSeeAccess.SaveBridge {
         for (Method m : tagValueInputClass.getDeclaredMethods()) {
             if (!Modifier.isStatic(m.getModifiers())) continue;
             Class<?>[] p = m.getParameterTypes();
-            if (p.length == 3 && p[0] == problemReporterClass && p[1] == registryClass
+            if (p.length == 3 && p[0] == problemReporterClass && p[1].isAssignableFrom(registryClass)
                     && p[2] == compoundTagClass
                     && valueInputClass.isAssignableFrom(m.getReturnType())) {
                 create = m;

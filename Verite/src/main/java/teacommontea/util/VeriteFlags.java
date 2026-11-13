@@ -11,6 +11,8 @@ import java.util.Map;
 
 import org.bukkit.plugin.Plugin;
 
+import teacommontea.clisto.YamlDoc;
+import teacommontea.clisto.YamlText;
 
 public final class VeriteFlags {
 
@@ -19,7 +21,6 @@ public final class VeriteFlags {
     public static final class Flag {
         final String name;
         final String file;
-        final String[] path;
         final Type type;
         final List<String> values;
 
@@ -29,7 +30,6 @@ public final class VeriteFlags {
             this.name = name;
             this.file = file;
             this.rawPath = path;
-            this.path = path.split("\\.");
             this.type = type;
             this.values = values;
         }
@@ -161,25 +161,10 @@ public final class VeriteFlags {
 
     private static Map<String, String> scalars(List<String> lines) {
         Map<String, String> out = new LinkedHashMap<>();
-        List<String> names = new ArrayList<>();
-        List<Integer> indents = new ArrayList<>();
-        for (String line : lines) {
-            String trimmed = line.trim();
-            if (trimmed.isEmpty() || trimmed.startsWith("#") || trimmed.startsWith("-")) continue;
-            int colon = Yaml.keyColon(line);
-            if (colon < 0) continue;
-            int indent = Yaml.indentOf(line);
-            String key = line.substring(indent, colon).trim();
-            if (key.isEmpty()) continue;
-            while (!indents.isEmpty() && indents.get(indents.size() - 1) >= indent) {
-                indents.remove(indents.size() - 1);
-                names.remove(names.size() - 1);
-            }
-            names.add(key);
-            indents.add(indent);
-            String value = Yaml.valueOf(line);
+        for (YamlDoc.Entry e : YamlDoc.parse(lines).entries()) {
+            String value = YamlText.valueOf(lines.get(e.keyLine()));
             if (value != null && !value.isEmpty()) {
-                out.put(String.join(".", names), value);
+                out.put(e.dotted(), value);
             }
         }
         return out;
@@ -209,52 +194,24 @@ public final class VeriteFlags {
         }
         List<String> lines;
         try {
-            lines = Files.readAllLines(f.toPath(), StandardCharsets.UTF_8);
+            lines = YamlText.splitLines(new String(Files.readAllBytes(f.toPath()), StandardCharsets.UTF_8));
         } catch (IOException e) {
             return null;
         }
-        int idx = locate(lines, flag.path);
-        if (idx < 0) {
+        YamlDoc.Entry entry = YamlDoc.parse(lines).find(flag.rawPath);
+        if (entry == null || entry.isParent()) {
             return null;
         }
-        return Yaml.valueOf(lines.get(idx));
+        return YamlText.valueOf(lines.get(entry.keyLine()));
     }
 
     public static boolean set(Plugin plugin, Flag flag, String value) {
         if (flag == null || value == null || !validate(flag, value)) {
             return false;
         }
-        java.io.File f = new java.io.File(plugin.getDataFolder(), flag.file);
-        if (!f.isFile()) {
-            return false;
-        }
-        List<String> lines;
         try {
-            lines = Files.readAllLines(f.toPath(), StandardCharsets.UTF_8);
+            return SelfHeal.clisto(plugin).set(flag.file, flag.rawPath, value);
         } catch (IOException e) {
-            return false;
-        }
-        int idx = locate(lines, flag.path);
-        if (idx < 0) {
-            return false;
-        }
-        String original = lines.get(idx);
-        int colon = original.indexOf(':');
-        if (colon < 0) {
-            return false;
-        }
-        String before = original.substring(0, colon + 1);
-        String comment = Yaml.trailingComment(original, colon + 1);
-        String rebuilt = before + " " + value + (comment.isEmpty() ? "" : " " + comment);
-        lines.set(idx, rebuilt);
-
-        java.io.File tmp = new java.io.File(f.getParentFile(), f.getName() + ".tmp");
-        try {
-            Files.write(tmp.toPath(), (String.join("\n", lines) + "\n").getBytes(StandardCharsets.UTF_8));
-            Files.move(tmp.toPath(), f.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-            return true;
-        } catch (IOException e) {
-            tmp.delete();
             return false;
         }
     }
@@ -282,63 +239,5 @@ public final class VeriteFlags {
             default:
                 return false;
         }
-    }
-
-    private static int locate(List<String> lines, String[] path) {
-        return locate(lines, path, 0, 0, lines.size());
-    }
-
-    private static int locate(List<String> lines, String[] path, int from, int depth, int end) {
-
-        int flat = findKey(lines, String.join(".", path), from, depth, end);
-        if (flat >= 0) {
-            return flat;
-        }
-
-        for (int take = path.length - 1; take >= 1; take--) {
-            String blockKey = String.join(".", java.util.Arrays.copyOfRange(path, 0, take));
-            int blockLine = findKey(lines, blockKey, from, depth, end);
-            if (blockLine < 0) {
-                continue;
-            }
-            int blockEnd = blockEnd(lines, blockLine, depth);
-            String[] rest = java.util.Arrays.copyOfRange(path, take, path.length);
-            int hit = locate(lines, rest, blockLine + 1, depth + 1, blockEnd);
-            if (hit >= 0) {
-                return hit;
-            }
-        }
-        return -1;
-    }
-
-    private static int findKey(List<String> lines, String key, int from, int depth, int end) {
-        for (int i = from; i < end && i < lines.size(); i++) {
-            String stripped = Yaml.stripComment(lines.get(i));
-            if (stripped.trim().isEmpty()) {
-                continue;
-            }
-            if (Yaml.indentOf(stripped) != depth * 2) {
-                continue;
-            }
-            String content = stripped.trim();
-            if (content.equals(key + ":") || content.startsWith(key + ": ")
-                    || content.startsWith(key + ":")) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private static int blockEnd(List<String> lines, int blockLine, int depth) {
-        for (int i = blockLine + 1; i < lines.size(); i++) {
-            String stripped = Yaml.stripComment(lines.get(i));
-            if (stripped.trim().isEmpty()) {
-                continue;
-            }
-            if (Yaml.indentOf(stripped) <= depth * 2) {
-                return i;
-            }
-        }
-        return lines.size();
     }
 }

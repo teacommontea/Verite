@@ -33,8 +33,11 @@ repositories {
 
 val proxyCompile: Configuration by configurations.creating
 val velocityAp: Configuration by configurations.creating
+val clisto: Configuration by configurations.creating
 
 dependencies {
+    compileOnly(project(":Clisto"))
+    clisto(project(":Clisto"))
     compileOnly("io.papermc.paper:paper-api:1.21.6-R0.1-SNAPSHOT") {
         exclude(group = "net.md-5", module = "bungeecord-chat")
     }
@@ -191,7 +194,7 @@ tasks.register("bumpVersion") {
 }
 
 tasks.register<org.gradle.jvm.tasks.Jar>("veriteJar") {
-    dependsOn(assembleClasses)
+    dependsOn(assembleClasses, clisto)
     archiveFileName.set("Verite-$version.jar")
     destinationDirectory.set(layout.projectDirectory)
 
@@ -201,6 +204,9 @@ tasks.register<org.gradle.jvm.tasks.Jar>("veriteJar") {
     from(compileRegistry.map { it.destinationDirectory })
     from(compileProxy.map { it.destinationDirectory })
     from(resRoot)
+    from({ clisto.map { zipTree(it) } }) {
+        exclude("META-INF/MANIFEST.MF")
+    }
     shadeConfig.forEach { dep ->
         from(zipTree(dep)) {
             exclude("META-INF/*.SF", "META-INF/*.RSA", "META-INF/*.DSA", "META-INF/MANIFEST.MF")

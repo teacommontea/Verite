@@ -168,7 +168,7 @@ public final class SauverListeners implements Listener {
     }
 
     private void recordClientDetails(Player p) {
-        int protocol = protocolOf(p);
+        int protocol = teacommontea.util.ClientProtocol.of(p);
         String referrer = virtualHostOf(p);
         dao().recordClient(p.getUniqueId(), null, protocol, referrer, System.currentTimeMillis());
 
@@ -190,7 +190,7 @@ public final class SauverListeners implements Listener {
     }
 
     private void describe(Player p, teacommontea.veritesauver.client.ClientProfile profile) {
-        int protocol = protocolOf(p);
+        int protocol = teacommontea.util.ClientProtocol.of(p);
         if (protocol > 0) {
             profile.fact("protocol", teacommontea.util.Lang.of("login.protocol", "protocol", protocol));
         }
@@ -218,15 +218,6 @@ public final class SauverListeners implements Listener {
             return l == null ? "unknown" : String.valueOf(l);
         } catch (Throwable t) {
             return "unknown";
-        }
-    }
-
-    private static int protocolOf(Player p) {
-        try {
-            Object v = Player.class.getMethod("getProtocolVersion").invoke(p);
-            return v instanceof Integer i ? i : 0;
-        } catch (Throwable t) {
-            return 0;
         }
     }
 

@@ -242,12 +242,12 @@ final class MenuHandlers {
             int addY = 18;
             for (int y = 1; y < 4; y++) {
                 for (int x = 0; x < 9; x++) {
-                    access.menuAddSlot(menu, gen.newSlot(playerInv, x + y * 9, 8 + x * 18,
+                    access.menuAddSlot(menu, gen.newPlayerSlot(playerInv, x + y * 9, 8 + x * 18,
                             103 + y * 18 + addY, SlotHandlers.Plain.INSTANCE));
                 }
             }
             for (int x = 0; x < 9; x++) {
-                access.menuAddSlot(menu, gen.newSlot(playerInv, x, 8 + x * 18, 161 + addY,
+                access.menuAddSlot(menu, gen.newPlayerSlot(playerInv, x, 8 + x * 18, 161 + addY,
                         SlotHandlers.Plain.INSTANCE));
             }
         }
@@ -325,12 +325,12 @@ final class MenuHandlers {
             int addY = (topRows - 4) * 18;
             for (int y = 1; y < 4; y++) {
                 for (int x = 0; x < 9; x++) {
-                    access.menuAddSlot(menu, gen.newSlot(playerInv, x + y * 9, 8 + x * 18,
+                    access.menuAddSlot(menu, gen.newPlayerSlot(playerInv, x + y * 9, 8 + x * 18,
                             103 + y * 18 + addY, SlotHandlers.Plain.INSTANCE));
                 }
             }
             for (int x = 0; x < 9; x++) {
-                access.menuAddSlot(menu, gen.newSlot(playerInv, x, 8 + x * 18, 161 + addY,
+                access.menuAddSlot(menu, gen.newPlayerSlot(playerInv, x, 8 + x * 18, 161 + addY,
                         SlotHandlers.Plain.INSTANCE));
             }
         }
